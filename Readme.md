@@ -6,4 +6,5 @@
 Exemple:
 
 Api-Authentification -> /v2/login -> JWT avec scope "payments:rw"
+
 Api-Payments -> /payments -> Autorise uniquement les JWT avec le scope "payments:rw" ou "payments:r"
