@@ -35,6 +35,23 @@ function generateSecureRandomString() {
  */
 const payments = [];
 
+/**
+ *
+ * @param {Array<string>} permissions
+ * @returns
+ */
+const middlewareCheckPermissions = (permissions) => (req, res, next) => {
+	const payload = req.toto;
+
+	for (const permission of permissions) {
+		if (payload.scope.includes(permission)) {
+			next();
+		}
+	}
+
+	return res.sendStatus(401);
+};
+
 const app = express()
 	.use((req, res, next) => {
 		const credentials = req.headers.authorization.split(" ");
@@ -47,36 +64,37 @@ const app = express()
 
 		const payload = jwt.verify(token, SECRET);
 
-		req.toto = payload;
+		req.payload = payload;
 
 		next();
 	})
-	.get("/payments/:paymentid", async (req, res, next) => {
-		const payload = req.toto;
-
-		console.log(payload);
-		// Bearer TOKEN
-		if (
-			!payload.scope.includes("payments:r") &&
-			!payload.scope.includes("payments:rw")
-		) {
-			return res.sendStatus(401);
+	.get(
+		"/payments/:paymentid",
+		middlewareCheckPermissions(["payments:r", "payments:rw"]),
+		async (req, res, next) => {
+			res.status(200).json({
+				ok: "vous avez le droit",
+			});
 		}
+	)
+	.post(
+		"/payments",
+		middlewareCheckPermissions(["payments:rw"]),
+		async (req, res, next) => {
+			// scope obligatoire payments:rw
 
-		res.status(200).json({
-			ok: "vous avez le droit",
-		});
-	})
-	.post("/payments", async (req, res, next) => {
-		// scope obligatoire payments:rw
-
-		res.status(200).json({
-			token,
-		});
-	})
-	.delete("/payments", async (req, res, next) => {
-		// scope obligatoire payments:rw
-	});
+			res.status(200).json({
+				token,
+			});
+		}
+	)
+	.delete(
+		"/payments",
+		middlewareCheckPermissions(["payments:rw"]),
+		async (req, res, next) => {
+			// scope obligatoire payments:rw
+		}
+	);
 
 app.listen(PORT, HOST, () => {
 	console.log(`Listening at ${HOST}:${PORT}`);
